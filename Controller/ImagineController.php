@@ -74,6 +74,10 @@ class ImagineController
 
         $image = $this->dataLoader->find($path);
         $targetFormat = pathinfo($path, PATHINFO_EXTENSION);
+        if (empty($targetFormat))
+        {
+            $targetFormat = 'jpg';
+        }
         $image = $this->filterManager->get($filter, $image, $targetFormat);
 
         if ($this->cachePathResolver) {
