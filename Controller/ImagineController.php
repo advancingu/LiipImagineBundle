@@ -58,26 +58,17 @@ class ImagineController
      */
     public function filterAction(Request $request, $path, $filter)
     {
-        $localPath = $this->webRoot.'/'.ltrim($path, '/');
+        $path = $this->webRoot.'/'.ltrim($path, '/');
 
-        if (file_exists($localPath)) {
-            
-            $path = $localPath;
-            
-            if ($this->cachePathResolver) {
-                $targetPath = $this->cachePathResolver->resolve($request, $path, $filter);
-                if ($targetPath instanceof Response) {
-                    return $targetPath;
-                }
+        if ($this->cachePathResolver) {
+            $targetPath = $this->cachePathResolver->resolve($request, $path, $filter);
+            if ($targetPath instanceof Response) {
+                return $targetPath;
             }
         }
 
         $image = $this->dataLoader->find($path);
         $targetFormat = pathinfo($path, PATHINFO_EXTENSION);
-        if (empty($targetFormat))
-        {
-            $targetFormat = 'jpg';
-        }
         $image = $this->filterManager->get($filter, $image, $targetFormat);
 
         if ($this->cachePathResolver) {
