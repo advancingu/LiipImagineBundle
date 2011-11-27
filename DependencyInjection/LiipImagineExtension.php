@@ -27,7 +27,8 @@ class LiipImagineExtension extends Extension
         $container->setParameter('liip_imagine.cache_prefix', $cachePrefix);
         $container->setParameter('liip_imagine.web_root', $config['web_root']);
         $container->setParameter('liip_imagine.formats', $config['formats']);
-        $container->setParameter('liip_imagine.cache', $config['cache']);
+        $container->setParameter('liip_imagine.cache.resolver.default', $config['cache']);
+
         foreach ($config['filter_sets'] as $filter => $options) {
             if (isset($options['path'])) {
                 $config['filter_sets'][$filter]['path'] = '/'.trim($options['path'], '/');
@@ -35,14 +36,8 @@ class LiipImagineExtension extends Extension
         }
         $container->setParameter('liip_imagine.filter_sets', $config['filter_sets']);
 
-        if ($container->getParameter('liip_imagine.cache')) {
-            $controller = $container->getDefinition('liip_imagine.controller');
-            $controller->addArgument(new Reference('liip_imagine.cache.path.resolver'));
-        }
+        $container->setParameter('liip_imagine.data.loader.default', $config['data_loader']);
 
-        if (!empty($config['loader'])) {
-            $controller = $container->getDefinition('liip_imagine.controller');
-            $controller->replaceArgument(0, new Reference($config['loader']));
-        }
+        $container->setParameter('liip_imagine.controller_action', $config['controller_action']);
     }
 }

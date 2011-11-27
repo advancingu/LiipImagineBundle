@@ -4,45 +4,39 @@ namespace Liip\ImagineBundle\Controller;
 
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
-use Liip\ImagineBundle\Imagine\CachePathResolver;
-use Liip\ImagineBundle\Imagine\DataLoader\LoaderInterface;
+use Liip\ImagineBundle\Imagine\Cache\CacheManager;
+use Liip\ImagineBundle\Imagine\Data\DataManager;
 use Liip\ImagineBundle\Imagine\Filter\FilterManager;
 
 class ImagineController
 {
     /**
-     * @var Liip\ImagineBundle\Imagine\DataLoader\LoaderInterface
+     * @var DataManager
      */
-    private $dataLoader;
+    protected $dataManager;
 
     /**
-     * @var Liip\ImagineBundle\Imagine\Filter\FilterManager
+     * @var FilterManager
      */
-    private $filterManager;
+    protected $filterManager;
 
     /**
-     * @var string
+     * @var CacheManager
      */
-    private $webRoot;
-
-    /**
-     * @var Liip\ImagineBundle\Imagine\CachePathResolver
-     */
-    private $cachePathResolver;
+    protected $cacheManager;
 
     /**
      * Constructor
      *
-     * @param Liip\ImagineBundle\Imagine\DataLoader\LoaderInterface $dataLoader
-     * @param Liip\ImagineBundle\Imagine\Filter\FilterManager       $filterManager
-     * @param Liip\ImagineBundle\Imagine\CachePathResolver          $cachePathResolver
+     * @param DataManager $dataManager
+     * @param FilterManager $filterManager
+     * @param CacheManager $cacheManager
      */
-    public function __construct(LoaderInterface $dataLoader, FilterManager $filterManager, $webRoot, CachePathResolver $cachePathResolver = null)
+    public function __construct(DataManager $dataManager, FilterManager $filterManager, CacheManager $cacheManager)
     {
-        $this->dataLoader = $dataLoader;
+        $this->dataManager = $dataManager;
         $this->filterManager = $filterManager;
-        $this->webRoot = realpath($webRoot);
-        $this->cachePathResolver = $cachePathResolver;
+        $this->cacheManager = $cacheManager;
     }
 
     /**
@@ -50,7 +44,7 @@ class ImagineController
      * optionally saves the image and
      * outputs it to the browser at the same time
      *
-     * @param Symfony\Component\HttpFoundation\Request $request
+     * @param Request $request
      * @param string $path
      * @param string $filter
      *
@@ -58,31 +52,18 @@ class ImagineController
      */
     public function filterAction(Request $request, $path, $filter)
     {
-        $path = $this->webRoot.'/'.ltrim($path, '/');
-
-        if ($this->cachePathResolver) {
-            $targetPath = $this->cachePathResolver->resolve($request, $path, $filter);
-            if ($targetPath instanceof Response) {
-                return $targetPath;
-            }
+        $targetPath = $this->cacheManager->resolve($request, $path, $filter);
+        if ($targetPath instanceof Response) {
+            return $targetPath;
         }
 
-        $image = $this->dataLoader->find($path);
-        $targetFormat = pathinfo($path, PATHINFO_EXTENSION);
-        $image = $this->filterManager->get($filter, $image, $targetFormat);
+        $image = $this->dataManager->find($filter, $path);
+        $response = $this->filterManager->get($request, $filter, $image, $path);
 
-        if ($this->cachePathResolver) {
-            $this->cachePathResolver->store($targetPath, $image);
-            $statusCode = 201;
-        } else {
-            $statusCode = 200;
+        if ($targetPath) {
+            $response = $this->cacheManager->store($response, $targetPath, $filter);
         }
 
-        $contentType = $request->getMimeType($targetFormat);
-        if (empty($contentType)) {
-            $contentType = 'image/'.$targetFormat;
-        }
-
-        return new Response($image, $statusCode, array('Content-Type' => $contentType));
+        return $response;
     }
 }

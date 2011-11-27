@@ -20,6 +20,8 @@ masking, etc.
 
 This bundle integrates the standalone PHP "[Imagine library](/avalanche123/Imagine)".
 
+[![Build Status](https://secure.travis-ci.org/liip/LiipImagineBundle.png)](http://travis-ci.org/liip/LiipImagineBundle)
+
 ## Installation
 
 To install this bundle, you'll need both the [Imagine library](/avalanche123/Imagine)
@@ -165,7 +167,8 @@ liip_imagine:
     web_root:     %kernel.root_dir%/../web
     cache_prefix: /media/cache
     cache:        true
-    loader:       ~
+    data_loader:       ~
+    controller_action: ~
     driver:       gd
     formats:      []
     filter_sets:  []
@@ -186,11 +189,17 @@ There are several configuration options available:
 
     default: `/media/cache`
 
- - `cache` - if to cache the generated image in the local file system
+ - `cache` - default cache resolver
 
- - `loader` - service id for a custom loader
+    default: web_path (which means the standard web_path resolver is used)
 
-    default: null (which means the standard filesystem loader is used)
+ - `data_loader` - name of a custom data loader
+
+    default: filesystem (which means the standard filesystem loader is used)
+
+ - `controller_action` - name of the controller action to use in the route loader
+
+    default: liip_imagine.controller:filterAction
 
  - `driver` - one of the three drivers: `gd`, `imagick`, `gmagick`
 
@@ -200,16 +209,18 @@ There are several configuration options available:
 
  - `filter_sets` - specify the filter sets that you want to define and use
 
-Each filter set that you specify have the following options:
+Each filter set that you specify has the following options:
 
  - `filters` - determine the type of filter to be used (refer to *Filters* section for more information)
     and options that should be passed to the specific filter type
  - `path` - used in place of the filter name to determine the path in combination with the global `cache_prefix`
  - `quality` - override the default quality of 100 for the generated images
+ - `cache` - override the default cache setting
+ - `data_loader` - override the default data loader
+ - `controller_action` - override the default controller action
+ - `format` - hardcodes the output format (aka the requested format is ignored)
 
 ## Built-in Filters
-
-Currently, this bundles comes with just one built-in filter: `thumbnail`.
 
 ### The `thumbnail` filter
 
@@ -226,6 +237,32 @@ liip_imagine:
 
 The `mode` can be either `outbound` or `inset`.
 
+### The `relative_resize` filter
+
+The `relative_resize` filter may be used to `heighten`, `widen`, `increase` or
+`scale` an image with respect to its existing dimensions. These options directly
+correspond to methods on Imagine's `BoxInterface`.
+
+Given an input image sized 50x40 (width, height), consider the following
+annotated configuration examples:
+
+``` yaml
+liip_imagine:
+    filter_sets:
+        my_heighten:
+            filters:
+                relative_resize: { heighten: 60 } # Transforms 50x40 to 75x60
+        my_widen:
+            filters:
+                relative_resize: { widen: 32 }    # Transforms 50x40 to 40x32
+        my_increase:
+            filters:
+                relative_resize: { increase: 10 } # Transforms 50x40 to 60x50
+        my_widen:
+            filters:
+                relative_resize: { scale: 2.5 }   # Transforms 50x40 to 125x100
+```
+
 ## Load your Custom Filters
 
 The ImagineBundle allows you to load your own custom filter classes. The only
@@ -238,7 +275,7 @@ container and apply the `liip_imagine.filter.loader` tag to it (example here in 
 
 ``` xml
 <service id="liip_imagine.filter.loader.my_custom_filter" class="Acme\ImagineBundle\Imagine\Filter\Loader\MyCustomFilterLoader">
-    <tag name="liip_imagine.filter.loader" filter="my_custom_filter" />
+    <tag name="liip_imagine.filter.loader" loader="my_custom_filter" />
 </service>
 ```
 
@@ -264,13 +301,14 @@ For an example of a filter loader implementation, refer to
 The ImagineBundle allows you to add your custom image loader classes. The only
 requirement is that each data loader implement the following interface:
 
-    Liip\ImagineBundle\Imagine\DataLoader\LoaderInterface
+    Liip\ImagineBundle\Imagine\Data\Loader\LoaderInterface
 
-To tell the bundle about your new filter loader, register it in the service
-container just like any other service:
+To tell the bundle about your new data loader, register it in the service
+container and apply the `liip_imagine.filter.loader` tag to it (example here in XML):
 
 ``` xml
-<service id="acme_imagine.loader.my_custom" class="Liip\ImagineBundle\Imagine\DataLoader\MyCustomDataLoader">
+<service id="acme_imagine.data.loader.my_custom" class="Acme\ImagineBundle\Imagine\Data\Loader\MyCustomDataLoader">
+    <tag name="liip_imagine.data.loader" loader="my_custom_data" />
     <argument type="service" id="imagine" />
     <argument>%liip_imagine.formats%</argument>
 </service>
@@ -279,12 +317,79 @@ container just like any other service:
 For more information on the service container, see the Symfony2
 [Service Container](http://symfony.com/doc/current/book/service_container.html) documentation.
 
-You can enable your custom data loader by adding it to the your configuration:
+You can set your custom data loader by adding it to the your configuration as the new
+default loader as follows:
 
 ``` yaml
 liip_imagine:
-    loader: acme_imagine.loader.my_custom
+    data_loader: my_custom_data
 ```
 
-For an example of a filter loader implementation, refer to
-`Liip\ImagineBundle\Imagine\DataLoader\FileSystemLoader`.
+Alternatively you can only set the custom data loader for just a specific filter set:
+
+
+``` yaml
+liip_imagine:
+    filter_sets:
+        my_special_style:
+            data_loader: my_custom_data
+            filters:
+                my_custom_filter: { }
+```
+
+
+For an example of a data loader implementation, refer to
+`Liip\ImagineBundle\Imagine\Data\Loader\FileSystemLoader`.
+
+## Custom cache resolver
+
+The ImagineBundle allows you to add your custom cache resolver classes. The only
+requirement is that each cache resolver loader implement the following interface:
+
+    Liip\ImagineBundle\Imagine\Cache\Resolver\ResolverInterface
+
+To tell the bundle about your new cache resolver, register it in the service
+container and apply the `liip_imagine.cache.resolver` tag to it (example here in XML):
+
+``` xml
+<service id="acme_imagine.cache.resolver.my_custom" class="Acme\ImagineBundle\Imagine\Cache\Resolver\MyCustomCacheResolver">
+    <tag name="liip_imagine.cache.resolver" resolver="my_custom_cache" />
+    <argument type="service" id="router" />
+    <argument type="service" id="filesystem" />
+    <argument>%liip_imagine.web_root%</argument>
+</service>
+```
+
+For more information on the service container, see the Symfony2
+[Service Container](http://symfony.com/doc/current/book/service_container.html) documentation.
+
+You can set your custom cache reslover by adding it to the your configuration as the new
+default resolver as follows:
+
+``` yaml
+liip_imagine:
+    cache: my_custom_cache
+```
+
+Alternatively you can only set the custom cache resolver for just a specific filter set:
+
+
+``` yaml
+liip_imagine:
+    filter_sets:
+        my_special_style:
+            cache: my_custom_cache
+            filters:
+                my_custom_filter: { }
+```
+
+
+For an example of a data loader implementation, refer to
+`Liip\ImagineBundle\Imagine\Data\Loader\FileSystemLoader`.
+
+## Dynamic filters
+
+With a custom data loader it is possible to dynamically modify the configuration that will
+be applied to the image. To do this simple store the filter configuration along with the
+image. Inside the data loader read this configuration and dynamically change the configuration
+for the given filter inside the ``FilterConfiguration`` instance.

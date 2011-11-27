@@ -37,25 +37,12 @@ class LiipImagineExtensionTest extends \PHPUnit_Framework_TestCase
     {
         $this->createEmptyConfiguration();
 
-        $this->assertParameter(true, 'liip_imagine.cache');
+        $this->assertParameter('web_path', 'liip_imagine.cache.resolver.default');
         $this->assertAlias('liip_imagine.gd', 'liip_imagine');
         $this->assertHasDefinition('liip_imagine.controller');
         $this->assertDICConstructorArguments(
             $this->containerBuilder->getDefinition('liip_imagine.controller'),
-            array(new Reference('liip_imagine.loader.filesystem'), new Reference('liip_imagine.filter.manager'), '%liip_imagine.web_root%', new Reference('liip_imagine.cache.path.resolver'))
-        );
-    }
-
-    public function testLoad()
-    {
-        $this->createFullConfiguration();
-
-        $this->assertParameter(false, 'liip_imagine.cache');
-        $this->assertAlias('liip_imagine.imagick', 'liip_imagine');
-        $this->assertHasDefinition('liip_imagine.controller');
-        $this->assertDICConstructorArguments(
-            $this->containerBuilder->getDefinition('liip_imagine.controller'),
-            array(new Reference('acme_liip_imagine.loader'), new Reference('liip_imagine.filter.manager'), '%liip_imagine.web_root%')
+            array(new Reference('liip_imagine.data.manager'), new Reference('liip_imagine.filter.manager'), new Reference('liip_imagine.cache.manager'))
         );
     }
 
@@ -115,7 +102,7 @@ filter_sets:
         quality: 100
     '':
         quality: 100
-loader: acme_liip_imagine.loader
+data_loader: my_loader
 EOF;
         $parser = new Parser();
 

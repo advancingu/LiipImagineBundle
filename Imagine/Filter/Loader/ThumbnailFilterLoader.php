@@ -19,6 +19,7 @@ class ThumbnailFilterLoader implements LoaderInterface
         $origWidth = $size->getWidth();
         $origHeight = $size->getHeight();
 
+
         if (null === $width || null === $height) {
             if (null === $height) {
                 $height = (int)(($width / $origWidth) * $origHeight);

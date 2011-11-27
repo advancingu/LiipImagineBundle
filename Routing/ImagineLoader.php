@@ -9,13 +9,15 @@ use Symfony\Component\Config\Loader\Loader;
 
 class ImagineLoader extends Loader
 {
+    private $controllerAction;
     private $cachePrefix;
     private $filters;
 
-    public function __construct($cachePrefix, array $filters = array())
+    public function __construct($controllerAction, $cachePrefix, array $filters = array())
     {
+        $this->controllerAction = $controllerAction;
         $this->cachePrefix = $cachePrefix;
-        $this->filters     = $filters;
+        $this->filters = $filters;
     }
 
     public function supports($resource, $type = null)
@@ -26,7 +28,6 @@ class ImagineLoader extends Loader
     public function load($resource, $type = null)
     {
         $requirements = array('_method' => 'GET', 'filter' => '[A-z0-9_\-]*', 'path' => '.+');
-        $defaults     = array('_controller' => 'liip_imagine.controller:filterAction');
         $routes       = new RouteCollection();
 
         if (count($this->filters) > 0) {
@@ -40,9 +41,14 @@ class ImagineLoader extends Loader
                     $pattern .= '/'.$filter;
                 }
 
+                $defaults = array(
+                    '_controller' => empty($config['controller_action']) ? $this->controllerAction : $config['controller_action'],
+                    'filter' => $filter,
+                );
+
                 $routes->add('_imagine_'.$filter, new Route(
                     $pattern.'/{path}',
-                    array_merge( $defaults, array('filter' => $filter)),
+                    $defaults,
                     $requirements
                 ));
             }
