@@ -56,10 +56,29 @@ class ImagineController
         if ($targetPath instanceof Response) {
             return $targetPath;
         }
+        
+        $imageCacheTag = $this->dataManager->getCacheTag($filter, $path);
+        $imageLastModified = $this->dataManager->getLastModified($filter, $path);
+        $filterVersion = $this->filterManager->getFilterVersion($filter);
+        
+        $eTag = $imageCacheTag.$filterVersion;
+        
+        $response = new Response();
+        $response->setETag($eTag);
+        $response->setLastModified($imageLastModified);
+        
+        if ($response->isNotModified($request))
+        {
+            // return the 304 Response immediately
+            return $response;
+        }
 
         $image = $this->dataManager->find($filter, $path);
         $response = $this->filterManager->get($request, $filter, $image, $path);
 
+        $response->setETag($eTag);
+        $response->setLastModified($imageLastModified);
+        
         if ($targetPath) {
             $response = $this->cacheManager->store($response, $targetPath, $filter);
         }

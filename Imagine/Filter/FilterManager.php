@@ -77,4 +77,23 @@ class FilterManager
 
         return new Response($image, 200, array('Content-Type' => $contentType));
     }
+    
+    /**
+     * Returns the version string for a filter.
+     * @param string $filter
+     * @throws \InvalidArgumentException
+     * @return string
+     */
+    public function getFilterVersion($filter)
+    {
+        $config = $this->filterConfig->get($filter);
+         
+        $version = '0';
+        if (!empty($config['version']))
+        {
+            $version = $config['version'];
+        }
+         
+        return $version;
+    }
 }

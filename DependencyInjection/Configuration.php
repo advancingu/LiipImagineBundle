@@ -48,6 +48,7 @@ class Configuration implements ConfigurationInterface
                             ->scalarNode('cache')->defaultNull()->end()
                             ->scalarNode('data_loader')->defaultNull()->end()
                             ->scalarNode('controller_action')->defaultNull()->end()
+                            ->scalarNode('version')->defaultValue(0)->end()
                             ->arrayNode('filters')
                                 ->useAttributeAsKey('name')
                                 ->prototype('array')

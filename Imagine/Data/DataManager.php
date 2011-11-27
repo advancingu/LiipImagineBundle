@@ -76,4 +76,29 @@ class DataManager
 
         return $loader->find($path);
     }
+    
+    /**
+    * @param string $path
+    *
+    * @return string
+    */
+    function getCacheTag($filter, $path)
+    {
+        $loader = $this->getLoader($filter);
+        
+        return $loader->getCacheTag($path);
+    }
+    
+    /**
+     * @param string $path
+     *
+     * @return \DateTime
+     */
+    function getLastModified($filter, $path)
+    {
+        $loader = $this->getLoader($filter);
+        
+        return $loader->getLastModified($path);
+    }
+    
 }

@@ -75,4 +75,25 @@ class FileSystemLoader implements LoaderInterface
 
         return $this->imagine->open($absolutePath);
     }
+    
+    /**
+    * @param string $path
+    *
+    * @return string
+    */
+    function getCacheTag($path)
+    {
+        return null;
+    }
+    
+    /**
+     * @param string $path
+     *
+     * @return \DateTime
+     */
+    function getLastModified($path)
+    {
+        // TODO return file modification time
+        return null;
+    }
 }
