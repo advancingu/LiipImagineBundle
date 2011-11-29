@@ -58,14 +58,12 @@ class ImagineController
         }
         
         $imageCacheTag = $this->dataManager->getCacheTag($filter, $path);
-        $imageLastModified = $this->dataManager->getLastModified($filter, $path);
         $filterVersion = $this->filterManager->getFilterVersion($filter);
         
         $eTag = $imageCacheTag.$filterVersion;
         
         $response = new Response();
         $response->setETag($eTag);
-        $response->setLastModified($imageLastModified);
         
         if ($response->isNotModified($request))
         {
@@ -77,7 +75,6 @@ class ImagineController
         $response = $this->filterManager->get($request, $filter, $image, $path);
 
         $response->setETag($eTag);
-        $response->setLastModified($imageLastModified);
         
         if ($targetPath) {
             $response = $this->cacheManager->store($response, $targetPath, $filter);
